@@ -1,0 +1,5 @@
+GET http://localhost:8080/mine-block
+
+###
+
+GET http://localhost:8080/chain
