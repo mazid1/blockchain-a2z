@@ -18,6 +18,11 @@ const server = new Elysia()
       chain: blockchain.chain,
       length: blockchain.chain.length,
     };
+  })
+  .get("/is-valid", () => {
+    return {
+      isValid: blockchain.isValidChain(blockchain.chain),
+    };
   });
 
 server.listen(8080, () => console.info("Server is running on port 8080"));

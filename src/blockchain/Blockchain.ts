@@ -30,10 +30,10 @@ class Blockchain {
     let newProof = 1;
     let checkProof = false;
     while (!checkProof) {
-      const hashOperation = this.hasher
+      const hash = this.hasher
         .update((newProof ** 2 - previousProof ** 2).toString())
         .digest("hex");
-      if (hashOperation.slice(0, 4) === "0000") {
+      if (hash.slice(0, 4) === "0000") {
         checkProof = true;
       } else {
         newProof++;
@@ -44,6 +44,28 @@ class Blockchain {
 
   hash(block: Block) {
     return this.hasher.update(JSON.stringify(block)).digest("hex");
+  }
+
+  isValidChain(chain: Block[]) {
+    let previousBlock = chain[0];
+    let blockIndex = 1;
+    while (blockIndex < chain.length) {
+      const block = chain[blockIndex];
+      if (block.previousHash !== this.hash(previousBlock)) {
+        return false;
+      }
+      const previousProof = previousBlock.proof;
+      const proof = block.proof;
+      const hash = this.hasher
+        .update((proof ** 2 - previousProof ** 2).toString())
+        .digest("hex");
+      if (hash.slice(0, 4) !== "0000") {
+        return false;
+      }
+      previousBlock = block;
+      blockIndex++;
+    }
+    return true;
   }
 }
 
