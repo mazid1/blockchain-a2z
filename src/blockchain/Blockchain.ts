@@ -1,13 +1,17 @@
 import { CryptoHasher } from "bun";
-import type { Block } from "./blockchain.types";
+import type { Block, Transaction } from "./blockchain.types";
 
 class Blockchain {
   chain: Block[];
+  transactions: Transaction[];
+  nodes: Set<string>;
   hasher: CryptoHasher;
 
   constructor() {
     this.hasher = new CryptoHasher("sha256");
     this.chain = [];
+    this.transactions = [];
+    this.nodes = new Set();
     this.createBlock(1, "0");
   }
 
@@ -17,8 +21,10 @@ class Blockchain {
       timestamp: new Date(),
       proof,
       previousHash,
+      transactions: this.transactions,
     };
     this.chain.push(block);
+    this.transactions = [];
     return block;
   }
 
@@ -66,6 +72,37 @@ class Blockchain {
       blockIndex++;
     }
     return true;
+  }
+
+  addTransaction(sender: string, receiver: string, amount: number) {
+    this.transactions.push({ sender, receiver, amount });
+    return this.getPreviousBlock().index + 1;
+  }
+
+  addNode(address: string) {
+    const url = new URL(address);
+    this.nodes.add(url.host);
+  }
+
+  async replaceChain() {
+    const network = Array.from(this.nodes);
+    let longestChain = null;
+    let maxLength = this.chain.length;
+    for (const node of network) {
+      const response = await fetch(`http://${node}/chain`);
+      if (response.ok) {
+        const { length, chain } = await response.json();
+        if (length > maxLength && this.isValidChain(chain)) {
+          maxLength = length;
+          longestChain = chain;
+        }
+      }
+    }
+    if (longestChain) {
+      this.chain = longestChain;
+      return true;
+    }
+    return false;
   }
 }
 
